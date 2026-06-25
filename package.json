@@ -22,6 +22,7 @@
   "homepage": "https://github.com/alab2296/bookease-blockchain#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.1.2",
+    "chai": "^4.5.0",
     "hardhat": "^2.26.3"
   }
 }
