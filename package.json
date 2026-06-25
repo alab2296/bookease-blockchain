@@ -1,0 +1,27 @@
+{
+  "name": "bookease-blockchain",
+  "version": "1.0.0",
+  "description": "A decentralized booking and escrow system with trust scoring built on Ethereum.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alab2296/bookease-blockchain.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alab2296/bookease-blockchain/issues"
+  },
+  "homepage": "https://github.com/alab2296/bookease-blockchain#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
+    "hardhat": "^2.26.3"
+  }
+}
