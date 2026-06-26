@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract BookingEscrow {
+
+contract BookingEscrow is ReentrancyGuard {
 
     enum Status {
         Created,
@@ -35,6 +37,8 @@ contract BookingEscrow {
         address indexed provider
     );
 
+    event ProviderMarkedComplete(uint256 indexed id);
+
     event BookingCompleted(
         uint256 indexed id
     );
@@ -42,7 +46,6 @@ contract BookingEscrow {
     event BookingCancelled(
         uint256 indexed id
     );
-    event ProviderMarkedComplete(uint256 indexed id);
 
     // 1. CREATE BOOKING (Customer locks ETH)
     function createBooking() external payable {
@@ -89,7 +92,7 @@ contract BookingEscrow {
 
     emit ProviderMarkedComplete(_id);
     }
-    function confirmCompletion(uint256 _id) external {
+    function confirmCompletion(uint256 _id) external nonReentrant {
     Booking storage b = bookings[_id];
 
     require(b.id != 0, "Invalid booking");
