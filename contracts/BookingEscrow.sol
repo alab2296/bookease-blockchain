@@ -2,6 +2,10 @@
 pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+/// @title Booking Escrow System
+/// @notice Handles escrow-based booking between customer and provider
+/// @dev Funds are locked until customer confirms completion
+
 
 contract BookingEscrow is ReentrancyGuard {
 
@@ -37,7 +41,9 @@ contract BookingEscrow is ReentrancyGuard {
         address indexed provider
     );
 
-    event ProviderMarkedComplete(uint256 indexed id);
+    event ProviderMarkedComplete(
+        uint256 indexed id
+    );
 
     event BookingCompleted(
         uint256 indexed id
@@ -48,6 +54,9 @@ contract BookingEscrow is ReentrancyGuard {
     );
 
     // 1. CREATE BOOKING (Customer locks ETH)
+
+    /// @notice Create a booking and lock ETH in escrow
+    /// @dev Requires msg.value > 0
     function createBooking() external payable {
         require(msg.value > 0, "Send ETH to create booking");
 
@@ -66,6 +75,7 @@ contract BookingEscrow is ReentrancyGuard {
     
 
     // 2. ACCEPT BOOKING (Provider accepts job)
+    /// @notice Provider accepts a booking
     function acceptBooking(uint256 _id) external {
         Booking storage b = bookings[_id];
 
@@ -80,6 +90,7 @@ contract BookingEscrow is ReentrancyGuard {
     }
 
     // 3. COMPLETE BOOKING (Customer approves completion)
+    /// @notice Provider marks work as completed
     
     function providerComplete(uint256 _id) external {
     Booking storage b = bookings[_id];
@@ -92,6 +103,9 @@ contract BookingEscrow is ReentrancyGuard {
 
     emit ProviderMarkedComplete(_id);
     }
+
+    /// @notice Customer confirms completion and releases payment
+    /// @dev Uses nonReentrant for security
     function confirmCompletion(uint256 _id) external nonReentrant {
     Booking storage b = bookings[_id];
 
@@ -108,6 +122,7 @@ contract BookingEscrow is ReentrancyGuard {
     }
 
     // 4. CANCEL BOOKING (Before acceptance only)
+    /// @notice Cancel booking before acceptance and refund customer
     function cancelBooking(uint256 _id) external {
         Booking storage b = bookings[_id];
 
