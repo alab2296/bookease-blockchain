@@ -1,10 +1,15 @@
-import WalletTest from "./components/WalletTest";
+import Wallet from "./components/Wallet/Wallet";
+import CreateBooking from "./components/Booking/CreateBooking";
 
-export default function App() {
+function App() {
   return (
     <div>
       <h1>BookEase DApp</h1>
-      <WalletTest />
+
+      <Wallet />
+      <CreateBooking />
     </div>
   );
 }
+
+export default App;
