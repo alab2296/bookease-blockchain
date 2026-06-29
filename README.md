@@ -1,236 +1,184 @@
-# BookEase — Decentralized Booking & Escrow DApp
+# BookEase
 
-A full-stack Ethereum-based booking and escrow system built with Solidity, React, and Hardhat. Enables peer-to-peer service bookings with trustless payment handling.
+A decentralized booking and escrow system on Ethereum. Two people make a deal: customer locks ETH in a smart contract, provider does the work, customer confirms and releases the funds. If the provider doesn't accept, the customer can cancel and get their money back.
 
-![BookEase](https://img.shields.io/badge/Ethereum-Blockchain-purple) ![React](https://img.shields.io/badge/React-19-blue) ![Solidity](https://img.shields.io/badge/Solidity-0.8.20-red) ![Tests](https://img.shields.io/badge/Tests-Vitest-yellow)
+Built with Solidity (contract), React (frontend), and Hardhat (tests + deployment).
 
-## 🎯 Features
+## How it works
 
-- **Trustless Escrow**: ETH locked in smart contract until customer confirms completion
-- **Lifecycle States**: Created → Accepted → Provider Completed → Confirmed → Completed
-- **Secure Refunds**: Customers can cancel before acceptance to recover funds
-- **Event-Driven UX**: Real-time blockchain event listeners trigger UI updates
-- **Professional UI**: Responsive design with loading states, error handling, status badges
-- **Fully Tested**: Component and contract tests included
+- **Customer creates booking** with some ETH → money sits in the contract
+- **Provider accepts** → they're taking the job
+- **Provider marks complete** → work is done
+- **Customer confirms** → ETH is transferred to the provider
+- **Or customer cancels** (only before acceptance) → refund back to customer
 
-## 🏗️ Architecture
+Everything is secured by the contract — no trusted middleman needed.
 
-### Smart Contract (`contracts/BookingEscrow.sol`)
-- Pure Solidity contract with OpenZeppelin's ReentrancyGuard
-- 5 core functions: `createBooking`, `acceptBooking`, `providerComplete`, `confirmCompletion`, `cancelBooking`
-- Event emissions for all state changes
-- Comprehensive security tests
+## Stack
 
-### Frontend (`frontend/src/`)
-- **React 19** with Hooks for state management
-- **ethers.js v6** for blockchain interaction
-- **Vite** for fast development and production builds
-- **Component Library**: 8 specialized components
-- **CSS Framework**: 400+ lines of semantic styling
+| Part | Tech | Why |
+|------|------|-----|
+| Smart contract | Solidity 0.8.20 + OpenZeppelin | Standard library, reentrancy protection |
+| Frontend | React 19 + Vite | Fast, modern, good DX |
+| Blockchain client | ethers.js v6 | Better async/await than older versions |
+| Testing | Hardhat + Vitest | Can test both contract and components |
+| Styling | Custom CSS | No dependencies, semantic design |
 
-### Services Layer
-- `contractService.js`: Abstract contract interaction
-- `walletService.js`: MetaMask connection and signing
-- `useWallet.js`: Custom React hook for wallet state
+## Setup
 
-## 🚀 Quick Start
-
-### Prerequisites
+### Before you start
 - Node.js 18+
-- MetaMask browser extension
-- Sepolia testnet ETH (get from [faucet](https://www.alchemy.com/faucets/ethereum-sepolia))
+- MetaMask installed
+- Sepolia ETH from a [faucet](https://www.alchemy.com/faucets/ethereum-sepolia)
 
-### Installation
+### Install & run locally
 
-\`\`\`bash
-# Install root dependencies (Hardhat)
+```bash
 npm install
+cd frontend && npm install
+```
 
-# Install frontend dependencies
-cd frontend
-npm install
-\`\`\`
-
-### Development
-
-\`\`\`bash
-# Terminal 1: Start Hardhat local network
+Start the blockchain (Terminal 1):
+```bash
 npm run hardhat node
+```
 
-# Terminal 2: Deploy contract locally
+Deploy the contract (Terminal 2):
+```bash
 npm run deploy
+```
 
-# Terminal 3: Start React dev server
-cd frontend
-npm run dev
-\`\`\`
+Start the React app (Terminal 3):
+```bash
+cd frontend && npm run dev
+```
 
-Visit \`http://localhost:5173\`
+Then go to http://localhost:5173
 
-### Testing
+## Testing
 
-\`\`\`bash
-# Smart contract tests
+Smart contract tests:
+```bash
 npm test
+```
 
-# Frontend component tests
-cd frontend
-npm test
+Frontend component tests:
+```bash
+cd frontend && npm test
+npm run test:ui  # with UI
+```
 
-# Run tests with UI
-npm run test:ui
-\`\`\`
+## The flow
 
-### Production Build
+1. Customer sends ETH → contract locks it
+2. Provider sees booking, accepts it
+3. Provider does work, marks it complete
+4. Customer checks it's done, releases payment
+5. Provider gets ETH
 
-\`\`\`bash
-cd frontend
-npm run build
-\`\`\`
+Or if something goes wrong before step 2, customer just cancels and gets refunded.
 
-## 📋 Contract Interaction Flow
+## Contract details
 
-1. **Customer creates booking** with ETH amount → funds locked in contract
-2. **Provider accepts booking** → booking status changes to "Accepted"
-3. **Provider marks complete** → status changes to "ProviderCompleted"
-4. **Customer confirms** → ETH transferred to provider, status = "Completed"
+Located in `contracts/BookingEscrow.sol`. Has 5 main functions:
+- `createBooking()` — customer locks ETH
+- `acceptBooking(id)` — provider takes the job
+- `providerComplete(id)` — provider says work is done
+- `confirmCompletion(id)` — customer releases funds
+- `cancelBooking(id)` — customer gets refund (only before acceptance)
 
-**Alternative**: Customer can cancel before step 2 to receive refund.
+Uses `ReentrancyGuard` from OpenZeppelin to prevent reentrancy attacks. Only the customer can cancel/confirm, only the provider can mark complete — no one else can touch the funds.
 
-## 🔧 Environment Variables
+## Environment variables
 
-Create \`.env\` in root (see \`.env.example\`):
+Create a `.env` file in the root (copy from `.env.example`):
 
-\`\`\`env
+```env
 SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
-SEPOLIA_PRIVATE_KEY=your_private_key_here
-\`\`\`
+SEPOLIA_PRIVATE_KEY=your_test_wallet_private_key
+```
 
-**Never commit \`.env\`** — use \`.env.example\` as template.
+Never commit `.env` — it has your private key.
 
-## 📊 Contract State
+## Frontend
 
-Each booking is stored as:
+8 components for different actions:
+- `CreateBooking` — customer creates a booking
+- `AcceptBooking` — provider accepts
+- `ProviderComplete` — provider marks work done
+- `ConfirmCompletion` — customer releases payment
+- `CancelBooking` — customer cancels (if not accepted yet)
+- `ViewBooking` — search and view a single booking
+- `BookingsList` — see all bookings in a grid
+- `Wallet` — connect MetaMask
 
-\`\`\`javascript
-Booking {
-  id: uint256,
-  customer: address,
-  provider: address,
-  amount: uint256 (in wei),
-  status: enum (Created, Accepted, ProviderCompleted, Completed, Cancelled)
-}
-\`\`\`
+All styled with a single CSS file that uses semantic color variables and component classes. Responsive on mobile and desktop.
 
-All bookings are queryable via \`getBooking(id)\` or iterate via \`bookingCount\`.
+## Project structure
 
-## 🛡️ Security
-
-- **ReentrancyGuard**: Protects payment transfer from reentrancy attacks
-- **Access Control**: Only customer can cancel/confirm, only provider can mark complete
-- **Validation**: All inputs validated before state changes
-- **Escrow Pattern**: Funds never directly transferred until customer explicitly confirms
-
-**Audit Status**: Security test suite included in \`test/BookingEscrow.security.test.js\`
-
-## 📝 Project Structure
-
-\`\`\`
+```
 bookease-blockchain/
 ├── contracts/
-│   └── BookingEscrow.sol          # Main contract
+│   └── BookingEscrow.sol           # Main contract
 ├── test/
-│   ├── BookingEscrow.test.js      # Functional tests
+│   ├── BookingEscrow.test.js       # Functional tests
 │   └── BookingEscrow.security.test.js
 ├── frontend/
 │   ├── src/
-│   │   ├── components/Booking/    # 8 booking action components
-│   │   ├── components/Wallet/     # Wallet connection UI
-│   │   ├── services/              # Contract & wallet services
-│   │   ├── hooks/                 # Custom React hooks
-│   │   ├── App.jsx                # Main app layout
-│   │   └── App.css                # Semantic component styling
-│   ├── vitest.config.js           # Test configuration
+│   │   ├── components/Booking/     # 8 booking components
+│   │   ├── components/Wallet/      # Wallet UI
+│   │   ├── services/               # Contract & wallet services
+│   │   ├── hooks/                  # Custom React hooks
+│   │   ├── App.jsx                 # Main app
+│   │   └── App.css                 # All styles
 │   └── package.json
 ├── scripts/
-│   └── deploy.js                  # Hardhat deployment script
+│   └── deploy.js                   # Deployment script
 ├── hardhat.config.js
-└── README.md (this file)
-\`\`\`
+└── README.md
+```
 
-## 🧪 Testing
+## Deploy to Sepolia
 
-### Unit Tests (Hardhat)
+Make sure you have `.env` with your keys, then:
 
-\`\`\`bash
-npm test
-\`\`\`
+```bash
+npm run hardhat run scripts/deploy.js --network sepolia
+```
 
-Covers:
-- Booking creation with ETH locking
-- Provider acceptance
-- Work completion & customer confirmation
-- Refund on cancellation
-- Security: reentrancy, access control, invalid state transitions
+You'll get the contract address back. Copy it and update the contract config if needed.
 
-### Component Tests (Vitest)
+## Tests
 
-\`\`\`bash
-cd frontend
-npm test
-\`\`\`
+Hardhat tests cover:
+- Creating a booking with ETH
+- Provider accepting
+- Marking complete and customer confirming
+- Refunds on cancellation
+- Security stuff (reentrancy, access control)
 
-Covers:
-- Form validation (positive amounts, valid IDs)
-- Button loading states during transactions
-- Error display on contract failures
-- Success feedback after transactions
-- Input clearing after successful operations
+Component tests with Vitest cover:
+- Form validation (amount must be > 0, booking ID must exist)
+- Loading states while transactions happen
+- Error messages when things fail
+- Success messages when they work
+- Input fields clearing after successful actions
 
-## 🔗 Contract Addresses
+## Security
 
-| Network | Address |
-|---------|---------|
-| Hardhat (Local) | \`0x5FbDB2315678afecb367f032d93F642f64180aa3\` |
-| Sepolia | TBD |
+- Uses `ReentrancyGuard` so no one can re-enter the payment function
+- Only customer can cancel/confirm, only provider can mark complete
+- All inputs are validated
+- Money doesn't move until the customer explicitly confirms
 
-## 📚 Key Technologies
+## What I learned building this
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Blockchain | Solidity 0.8.20 + OpenZeppelin | Industry standard, audited libraries |
-| Ethereum Client | ethers.js v6 | Modern async/await API, smaller bundle |
-| Frontend | React 19 | Latest hooks, streaming SSR ready |
-| Build | Vite | Lightning-fast HMR, optimized bundles |
-| Testing | Hardhat + Vitest | Comprehensive contract + component coverage |
-| Styling | Custom CSS | Semantic, zero dependencies |
+- How to structure a React app without a state management library (just hooks)
+- How ethers.js v6 handles contract interaction and event listening
+- Writing Solidity that's actually safe (ReentrancyGuard matters)
+- Testing both contracts (Hardhat) and components (Vitest) in one project
+- Building a semantic CSS framework instead of using Tailwind
 
-## 🎨 UI/UX Highlights
+## License
 
-- **Responsive Grid Layout**: 2-column on desktop, 1-column on mobile
-- **Loading Spinners**: Clear feedback during async transactions
-- **Status Badges**: Visual booking state with color coding
-- **Real-time Events**: Live updates from blockchain events
-- **Inline Validation**: Form errors shown without page reload
-- **Accessibility**: Semantic HTML, proper labels, ARIA attributes
-
-## 📖 Learn More
-
-- [Solidity Docs](https://docs.soliditylang.org/)
-- [ethers.js](https://docs.ethers.org/)
-- [Hardhat](https://hardhat.org/)
-- [React 19](https://react.dev/)
-
-## 📄 License
-
-MIT License
-
-## 📧 Contact
-
-Built by [Ali Abdullah](https://github.com/alab2296)
-
----
-
-**Status**: ✅ Production-ready | 🧪 Fully tested | 📱 Responsive | 🔒 Secure
-
-Last updated: June 2026
+MIT
