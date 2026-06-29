@@ -2,7 +2,6 @@ import { useState } from "react";
 import { contractService } from "../../services/contractService";
 
 export default function CreateBooking() {
-  const [provider, setProvider] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState("");
@@ -12,7 +11,7 @@ export default function CreateBooking() {
       setLoading(true);
       setTxHash("");
 
-      const tx = await contractService.createBooking(provider, amount);
+      const tx = await contractService.createBooking(amount);
 
       setTxHash(tx.hash);
       alert("Booking created successfully!");
@@ -27,13 +26,6 @@ export default function CreateBooking() {
   return (
     <div style={styles.container}>
       <h2>Create Booking</h2>
-
-      <input
-        placeholder="Provider Address"
-        value={provider}
-        onChange={(e) => setProvider(e.target.value)}
-        style={styles.input}
-      />
 
       <input
         placeholder="Amount in ETH"

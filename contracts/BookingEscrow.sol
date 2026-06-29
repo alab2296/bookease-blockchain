@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Booking Escrow System
-/// @notice Handles escrow-based booking between customer and provider
-/// @dev Funds are locked until customer confirms completion
-
+/// @notice Escrow-based booking system (Airbnb-style flow)
+/// @dev ETH is locked in contract until completion confirmation
 
 contract BookingEscrow is ReentrancyGuard {
+
+    // -----------------------------
+    // STATE
+    // -----------------------------
 
     enum Status {
         Created,
@@ -29,7 +33,10 @@ contract BookingEscrow is ReentrancyGuard {
 
     mapping(uint256 => Booking) public bookings;
 
+    // -----------------------------
     // EVENTS
+    // -----------------------------
+
     event BookingCreated(
         uint256 indexed id,
         address indexed customer,
@@ -46,19 +53,24 @@ contract BookingEscrow is ReentrancyGuard {
     );
 
     event BookingCompleted(
-        uint256 indexed id
+        uint256 indexed id,
+        address provider,
+        uint256 amount
     );
 
     event BookingCancelled(
-        uint256 indexed id
+        uint256 indexed id,
+        address customer,
+        uint256 amount
     );
 
-    // 1. CREATE BOOKING (Customer locks ETH)
+    // -----------------------------
+    // CREATE BOOKING
+    // -----------------------------
 
-    /// @notice Create a booking and lock ETH in escrow
-    /// @dev Requires msg.value > 0
+    /// @notice Customer creates booking and locks ETH
     function createBooking() external payable {
-        require(msg.value > 0, "Send ETH to create booking");
+        require(msg.value > 0, "Amount must be > 0");
 
         bookingCount++;
 
@@ -72,16 +84,17 @@ contract BookingEscrow is ReentrancyGuard {
 
         emit BookingCreated(bookingCount, msg.sender, msg.value);
     }
-    
 
-    // 2. ACCEPT BOOKING (Provider accepts job)
-    /// @notice Provider accepts a booking
+    // -----------------------------
+    // ACCEPT BOOKING
+    // -----------------------------
+
     function acceptBooking(uint256 _id) external {
         Booking storage b = bookings[_id];
 
         require(b.id != 0, "Invalid booking");
-        require(b.status == Status.Created, "Not available");
-        require(b.provider == address(0), "Already assigned");
+        require(b.status == Status.Created, "Already accepted or closed");
+        require(b.provider == address(0), "Provider already assigned");
 
         b.provider = payable(msg.sender);
         b.status = Status.Accepted;
@@ -89,57 +102,70 @@ contract BookingEscrow is ReentrancyGuard {
         emit BookingAccepted(_id, msg.sender);
     }
 
-    // 3. COMPLETE BOOKING (Customer approves completion)
-    /// @notice Provider marks work as completed
-    
+    // -----------------------------
+    // PROVIDER COMPLETES WORK
+    // -----------------------------
+
     function providerComplete(uint256 _id) external {
-    Booking storage b = bookings[_id];
+        Booking storage b = bookings[_id];
 
-    require(b.id != 0, "Invalid booking");
-    require(msg.sender == b.provider, "Only provider");
-    require(b.status == Status.Accepted, "Not active");
+        require(b.id != 0, "Invalid booking");
+        require(msg.sender == b.provider, "Only provider");
+        require(b.status == Status.Accepted, "Not active booking");
 
-    b.status = Status.ProviderCompleted;
+        b.status = Status.ProviderCompleted;
 
-    emit ProviderMarkedComplete(_id);
+        emit ProviderMarkedComplete(_id);
     }
 
-    /// @notice Customer confirms completion and releases payment
-    /// @dev Uses nonReentrant for security
+    // -----------------------------
+    // CUSTOMER CONFIRMS & RELEASES FUNDS
+    // -----------------------------
+
     function confirmCompletion(uint256 _id) external nonReentrant {
-    Booking storage b = bookings[_id];
+        Booking storage b = bookings[_id];
 
-    require(b.id != 0, "Invalid booking");
-    require(msg.sender == b.customer, "Only customer");
-    require(b.status == Status.ProviderCompleted, "Not ready");
+        require(b.id != 0, "Invalid booking");
+        require(msg.sender == b.customer, "Only customer");
+        require(b.status == Status.ProviderCompleted, "Not ready");
 
-    b.status = Status.Completed;
+        b.status = Status.Completed;
 
-    (bool success, ) = b.provider.call{value: b.amount}("");
-    require(success, "Transfer failed");
+        uint256 amount = b.amount;
+        address payable provider = b.provider;
 
-    emit BookingCompleted(_id);
+        (bool success, ) = provider.call{value: amount}("");
+        require(success, "Transfer failed");
+
+        emit BookingCompleted(_id, provider, amount);
     }
 
-    // 4. CANCEL BOOKING (Before acceptance only)
-    /// @notice Cancel booking before acceptance and refund customer
+    // -----------------------------
+    // CANCEL BOOKING (ONLY BEFORE ACCEPTANCE)
+    // -----------------------------
+
     function cancelBooking(uint256 _id) external {
         Booking storage b = bookings[_id];
 
         require(b.id != 0, "Invalid booking");
-        require(msg.sender == b.customer, "Only customer can cancel");
+        require(msg.sender == b.customer, "Only customer");
         require(b.status == Status.Created, "Cannot cancel now");
 
         b.status = Status.Cancelled;
 
-        // Refund customer
-        (bool success, ) = b.customer.call{value: b.amount}("");
+        uint256 amount = b.amount;
+        address payable customer = b.customer;
+
+        (bool success, ) = customer.call{value: amount}("");
         require(success, "Refund failed");
 
-        emit BookingCancelled(_id);
+        emit BookingCancelled(_id, customer, amount);
     }
 
-    // VIEW FUNCTION
+    // -----------------------------
+    // VIEW
+    // -----------------------------
+
     function getBooking(uint256 _id) external view returns (Booking memory) {
         return bookings[_id];
     }
