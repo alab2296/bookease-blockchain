@@ -1,47 +1,41 @@
-# Product Requirements Document (PRD)
+# Product Idea
 
-## 1. Problem
+## Problem
 
-Online booking platforms suffer from:
+Booking platforms have trust issues:
+- How do you know the provider will actually do the work?
+- How do you know the customer won't claim the work was bad to get a refund?
+- What if the platform goes down or shuts down?
 
-- Fake listings
-- Payment disputes
-- Delayed refunds
-- Lack of trust between users and providers
+## Solution
 
-## 2. Solution
+Use a smart contract as the middleman:
+- Customer sends ETH to the contract (not to the provider)
+- Provider does the work
+- Customer confirms it's done
+- Contract automatically sends ETH to provider
+- If provider doesn't accept, customer gets refunded
 
-BookEase Blockchain introduces a decentralized escrow system where:
+No platform can steal the money. No disputes. Just code.
 
-- Payments are locked in smart contracts
-- Funds are released only when booking is completed
-- Refunds are automatic based on rules
-- Trust score is recorded on-chain
+## What it does
 
-## 3. Users
+1. Customer creates a booking with amount
+2. Provider accepts it
+3. Provider marks work complete
+4. Customer confirms and releases payment
+5. Or customer cancels (before acceptance) and gets refunded
 
-- Customers
-- Service Providers
-- Platform Admin (optional)
+## What's on-chain
 
-## 4. Core Features
+- Booking records (id, customer, provider, amount, status)
+- ETH transfers
 
-- Booking creation
-- Escrow payment system
-- Booking confirmation
-- Refund logic
+## What's not needed yet
+
 - Reputation system
-
-## 5. Blockchain Role
-
-On-chain:
-
-- Booking records
-- Payment escrow
-- Trust score updates
-
-Off-chain:
-
-- UI data
+- Reviews
+- User profiles
 - Images
-- Search system
+
+Those could be added later. For now, just the escrow.
