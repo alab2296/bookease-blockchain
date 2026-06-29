@@ -4,65 +4,69 @@ import { contractService } from "../../services/contractService";
 export default function CreateBooking() {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
-  const [txHash, setTxHash] = useState("");
+  const [feedback, setFeedback] = useState(null);
 
   const handleCreateBooking = async () => {
+    if (!amount || Number(amount) <= 0) {
+      setFeedback({ type: "error", message: "Please enter a valid amount" });
+      return;
+    }
+
     try {
       setLoading(true);
-      setTxHash("");
+      setFeedback(null);
 
       const tx = await contractService.createBooking(amount);
+      await tx.wait();
 
-      setTxHash(tx.hash);
-      alert("Booking created successfully!");
+      setFeedback({
+        type: "success",
+        message: `Booking created! TX: ${tx.hash}`,
+      });
+      setAmount("");
     } catch (error) {
+      setFeedback({
+        type: "error",
+        message: error.message || "Failed to create booking",
+      });
       console.error(error);
-      alert("Transaction failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
+    <div className="section">
       <h2>Create Booking</h2>
 
-      <input
-        placeholder="Amount in ETH"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        style={styles.input}
-      />
+      {feedback && (
+        <div className={`alert alert-${feedback.type}`}>
+          <span>{feedback.message}</span>
+        </div>
+      )}
 
-      <button onClick={handleCreateBooking} style={styles.button}>
+      <div className="form-group">
+        <label htmlFor="amount">Amount (ETH)</label>
+        <input
+          id="amount"
+          type="number"
+          placeholder="0.1"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          step="0.01"
+          min="0"
+          disabled={loading}
+        />
+      </div>
+
+      <button
+        onClick={handleCreateBooking}
+        disabled={loading}
+        className="btn-primary"
+      >
+        {loading && <span className="loading-spinner" />}
         {loading ? "Processing..." : "Create Booking"}
       </button>
-
-      {txHash && <p style={styles.tx}>TX: {txHash}</p>}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: "20px",
-    border: "1px solid #ddd",
-    marginTop: "20px",
-    borderRadius: "8px",
-  },
-  input: {
-    display: "block",
-    margin: "10px 0",
-    padding: "8px",
-    width: "300px",
-  },
-  button: {
-    padding: "10px 15px",
-    cursor: "pointer",
-  },
-  tx: {
-    marginTop: "10px",
-    fontSize: "12px",
-    color: "green",
-  },
-};

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { contractService } from "../../services/contractService";
 
-export default function AcceptBooking() {
+export default function CancelBooking() {
   const [bookingId, setBookingId] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const handleAcceptBooking = async () => {
+  const handleCancelBooking = async () => {
     if (!bookingId || Number(bookingId) <= 0) {
       setFeedback({ type: "error", message: "Please enter a valid booking ID" });
       return;
@@ -16,18 +16,18 @@ export default function AcceptBooking() {
       setLoading(true);
       setFeedback(null);
 
-      const tx = await contractService.acceptBooking(bookingId);
+      const tx = await contractService.cancelBooking(bookingId);
       await tx.wait();
 
       setFeedback({
         type: "success",
-        message: `Booking #${bookingId} accepted successfully!`,
+        message: `Booking #${bookingId} cancelled and refunded`,
       });
       setBookingId("");
     } catch (error) {
       setFeedback({
         type: "error",
-        message: error.message || "Failed to accept booking",
+        message: error.message || "Failed to cancel booking",
       });
       console.error(error);
     } finally {
@@ -37,7 +37,10 @@ export default function AcceptBooking() {
 
   return (
     <div className="section">
-      <h2>Accept Booking</h2>
+      <h2>Cancel Booking</h2>
+      <p className="text-muted" style={{ marginBottom: "16px" }}>
+        Only available before the booking is accepted
+      </p>
 
       {feedback && (
         <div className={`alert alert-${feedback.type}`}>
@@ -46,9 +49,9 @@ export default function AcceptBooking() {
       )}
 
       <div className="form-group">
-        <label htmlFor="booking-id">Booking ID</label>
+        <label htmlFor="cancel-booking-id">Booking ID</label>
         <input
-          id="booking-id"
+          id="cancel-booking-id"
           type="number"
           placeholder="e.g., 1"
           value={bookingId}
@@ -59,12 +62,12 @@ export default function AcceptBooking() {
       </div>
 
       <button
-        onClick={handleAcceptBooking}
+        onClick={handleCancelBooking}
         disabled={loading}
-        className="btn-primary"
+        className="btn-danger"
       >
         {loading && <span className="loading-spinner" />}
-        {loading ? "Accepting..." : "Accept Booking"}
+        {loading ? "Cancelling..." : "Cancel Booking"}
       </button>
     </div>
   );

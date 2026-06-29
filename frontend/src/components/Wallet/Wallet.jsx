@@ -4,39 +4,37 @@ export default function Wallet() {
   const { account, connectWallet, isConnecting, isConnected } = useWallet();
 
   return (
-    <div style={styles.container}>
+    <div className="section" style={{ marginBottom: "40px" }}>
+      <h2>Wallet Connection</h2>
+
       {!isConnected ? (
-        <button style={styles.button} onClick={connectWallet}>
+        <p className="text-muted" style={{ marginBottom: "16px" }}>
+          Connect your MetaMask wallet to interact with the BookEase DApp
+        </p>
+      ) : null}
+
+      {!isConnected ? (
+        <button onClick={connectWallet} disabled={isConnecting} className="btn-primary">
           {isConnecting ? "Connecting..." : "Connect Wallet"}
         </button>
       ) : (
-        <div style={styles.connected}>
-          <p>✅ Connected Wallet:</p>
-          <p style={styles.address}>
-            {account.slice(0, 6)}...{account.slice(-4)}
-          </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            justifyContent: "center",
+          }}
+        >
+          <span style={{ fontSize: "20px" }}>✅</span>
+          <div style={{ textAlign: "left" }}>
+            <p className="text-muted">Connected Account</p>
+            <p style={{ fontSize: "14px", fontFamily: "monospace", fontWeight: 600 }}>
+              {account.slice(0, 10)}...{account.slice(-8)}
+            </p>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: "20px",
-  },
-  button: {
-    padding: "10px 20px",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-  connected: {
-    padding: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    display: "inline-block",
-  },
-  address: {
-    fontWeight: "bold",
-  },
-};

@@ -3,91 +3,27 @@ import { useEffect, useState } from "react";
 import Wallet from "./components/Wallet/Wallet";
 import CreateBooking from "./components/Booking/CreateBooking";
 import AcceptBooking from "./components/Booking/AcceptBooking";
+import CancelBooking from "./components/Booking/CancelBooking";
+import ProviderComplete from "./components/Booking/ProviderComplete";
+import ConfirmCompletion from "./components/Booking/ConfirmCompletion";
+import ViewBooking from "./components/Booking/ViewBooking";
+import BookingsList from "./components/Booking/BookingsList";
 import { contractService } from "./services/contractService";
+import "./App.css";
 
 function App() {
-  // ================= STATE =================
-  const [completeId, setCompleteId] = useState("");
-  const [confirmId, setConfirmId] = useState("");
-  const [searchId, setSearchId] = useState("");
+  const [eventNotification, setEventNotification] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const [booking, setBooking] = useState(null);
-  const [allBookings, setAllBookings] = useState([]);
-
-  const [toast, setToast] = useState("");
-
-  // ================= STATUS =================
-  const getStatusText = (status) => {
-    switch (status) {
-      case "0":
-        return "Created";
-      case "1":
-        return "Accepted";
-      case "2":
-        return "Provider Completed";
-      case "3":
-        return "Completed";
-      case "4":
-        return "Cancelled";
-      default:
-        return "Unknown";
-    }
+  const showNotification = (message) => {
+    setEventNotification(message);
+    setTimeout(() => setEventNotification(null), 4000);
   };
 
-  // ================= TOAST =================
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3000);
+  const triggerRefresh = () => {
+    setRefreshTrigger((prev) => prev + 1);
   };
 
-  // ================= PROVIDER COMPLETE =================
-  const handleProviderComplete = async () => {
-    try {
-      const tx = await contractService.providerComplete(completeId);
-      await tx.wait();
-      showToast("Provider marked complete");
-      loadAllBookings();
-    } catch (err) {
-      console.error(err);
-      showToast("Provider complete failed");
-    }
-  };
-
-  // ================= CONFIRM COMPLETION =================
-  const handleConfirmCompletion = async () => {
-    try {
-      const tx = await contractService.confirmCompletion(confirmId);
-      await tx.wait();
-      showToast("Payment released");
-      loadAllBookings();
-    } catch (err) {
-      console.error(err);
-      showToast("Confirm failed");
-    }
-  };
-
-  // ================= SINGLE BOOKING =================
-  const handleGetBooking = async () => {
-    try {
-      const data = await contractService.getBooking(searchId);
-      setBooking(data);
-    } catch (err) {
-      console.error(err);
-      showToast("Fetch failed");
-    }
-  };
-
-  // ================= ALL BOOKINGS =================
-  const loadAllBookings = async () => {
-    try {
-      const data = await contractService.getAllBookings();
-      setAllBookings(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // ================= LIVE EVENT LISTENERS =================
   useEffect(() => {
     let contractInstance = null;
 
@@ -96,21 +32,20 @@ function App() {
         contractInstance = await contractService.getContractInstance();
 
         contractInstance.on("BookingCreated", (id) => {
-          showToast(`New Booking Created #${id.toString()}`);
-          loadAllBookings();
+          showNotification(`New Booking Created #${id.toString()}`);
+          triggerRefresh();
         });
 
         contractInstance.on("BookingAccepted", (id) => {
-          showToast(`Booking Accepted #${id.toString()}`);
-          loadAllBookings();
+          showNotification(`Booking Accepted #${id.toString()}`);
+          triggerRefresh();
         });
 
         contractInstance.on("BookingCompleted", (id) => {
-          showToast(`Booking Completed #${id.toString()}`);
-          loadAllBookings();
+          showNotification(`Booking Completed #${id.toString()}`);
+          triggerRefresh();
         });
       } catch (err) {
-        // MetaMask not connected yet — events will be set up on connect
         console.warn("Event listener setup skipped:", err.message);
       }
     };
@@ -125,121 +60,42 @@ function App() {
   }, []);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>BookEase DApp ⚡</h1>
-
-      {/* TOAST */}
-      {toast && (
-        <div
-          style={{
-            background: "black",
-            color: "white",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
-          {toast}
+    <div id="root">
+      <header className="header">
+        <div className="container">
+          <h1>⚡ BookEase DApp</h1>
+          <p>Decentralized booking and escrow system on Ethereum</p>
         </div>
-      )}
+      </header>
 
-      {/* WALLET */}
-      <Wallet />
+      <main className="container">
+        {eventNotification && (
+          <div className="alert alert-success" style={{ marginBottom: "20px" }}>
+            🔔 {eventNotification}
+          </div>
+        )}
 
-      {/* CREATE */}
-      <CreateBooking />
+        <Wallet />
 
-      <hr />
+        <section style={{ marginTop: "40px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 700, marginBottom: "24px" }}>
+            Booking Actions
+          </h2>
 
-      {/* ACCEPT */}
-      <AcceptBooking />
+          <div className="grid grid-2">
+            <CreateBooking />
+            <AcceptBooking />
+            <CancelBooking />
+            <ProviderComplete />
+            <ConfirmCompletion />
+            <ViewBooking />
+          </div>
+        </section>
 
-      {/* PROVIDER COMPLETE */}
-      <hr />
-      <h3>Provider Complete</h3>
-
-      <input
-        placeholder="Booking ID"
-        value={completeId}
-        onChange={(e) => setCompleteId(e.target.value)}
-      />
-      <button onClick={handleProviderComplete}>Mark Complete</button>
-
-      {/* CONFIRM */}
-      <hr />
-      <h3>Confirm Payment</h3>
-
-      <input
-        placeholder="Booking ID"
-        value={confirmId}
-        onChange={(e) => setConfirmId(e.target.value)}
-      />
-      <button onClick={handleConfirmCompletion}>Release Payment</button>
-
-      {/* SINGLE */}
-      <hr />
-      <h3>View Booking</h3>
-
-      <input
-        placeholder="Booking ID"
-        value={searchId}
-        onChange={(e) => setSearchId(e.target.value)}
-      />
-      <button onClick={handleGetBooking}>Get Booking</button>
-
-      {booking && (
-        <div
-          style={{
-            border: "1px solid #ccc",
-            padding: "10px",
-            marginTop: "10px",
-          }}
-        >
-          <p>
-            <b>ID:</b> {booking.id}
-          </p>
-          <p>
-            <b>Customer:</b> {booking.customer}
-          </p>
-          <p>
-            <b>Provider:</b> {booking.provider}
-          </p>
-          <p>
-            <b>Amount:</b> {booking.amount} ETH
-          </p>
-          <p>
-            <b>Status:</b> {getStatusText(booking.status)}
-          </p>
-        </div>
-      )}
-
-      {/* ALL BOOKINGS */}
-      <hr />
-      <h3>Live Bookings Dashboard</h3>
-
-      <button onClick={loadAllBookings}>Refresh</button>
-
-      {allBookings.map((b) => (
-        <div
-          key={b.id}
-          style={{ border: "1px solid #ddd", margin: "10px", padding: "10px" }}
-        >
-          <p>
-            <b>ID:</b> {b.id}
-          </p>
-          <p>
-            <b>Customer:</b> {b.customer}
-          </p>
-          <p>
-            <b>Provider:</b> {b.provider}
-          </p>
-          <p>
-            <b>Amount:</b> {b.amount} ETH
-          </p>
-          <p>
-            <b>Status:</b> {getStatusText(b.status)}
-          </p>
-        </div>
-      ))}
+        <section style={{ marginTop: "40px", marginBottom: "60px" }}>
+          <BookingsList key={refreshTrigger} />
+        </section>
+      </main>
     </div>
   );
 }
